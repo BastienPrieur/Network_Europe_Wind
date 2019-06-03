@@ -1,0 +1,12 @@
+gunicorn
+dash
+dash-core-components
+dash-html-components
+folium
+pandas
+numpy
+plotly
+plotly.graph_objs
+datetime
+json
+urllib
