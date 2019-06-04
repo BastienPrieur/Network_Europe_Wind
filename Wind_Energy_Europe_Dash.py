@@ -15,6 +15,7 @@ import plotly.graph_objs as go
 import datetime
 import urllib3
 from urllib.parse import quote
+import os
 
 ########################################################################################################################
 # Initialization
