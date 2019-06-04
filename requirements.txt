@@ -6,7 +6,6 @@ folium
 pandas
 numpy
 plotly
-plotly.graph_objs
 datetime
 json
 urllib
