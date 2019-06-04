@@ -1,1 +1,1 @@
-web: gunicorn --pythonpath Wind_Energy_Europe_Dash:server
+web: gunicorn Wind_Energy_Europe_Dash:server
