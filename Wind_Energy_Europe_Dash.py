@@ -13,8 +13,8 @@ import numpy as np
 import plotly
 import plotly.graph_objs as go
 import datetime
-import json
-import urllib
+import urllib3
+from urllib.parse import quote
 
 ########################################################################################################################
 # Initialization
@@ -37,10 +37,10 @@ df_data = pd.read_csv('Load_Factor_Europe_Wind.csv', low_memory=False)
 list_country = df_data.columns[4:]
 list_country = list_country.sort_values()
 # GeoJson for the map
-europe_geo = json.load(open('Europe_Geojson.json', 'r'))
+europe_geo = pd.read_json(open('Europe_Geojson.txt'))
 # Get properties from the GeoJson
 df_euro = pd.DataFrame()
-for feature in pd.read_json('Europe_Geojson.json').features:
+for feature in europe_geo['features']:
     df_euro.loc[feature['properties']['iso_a2'], 'Code'] = feature['properties']['iso_a2']
     df_euro.loc[feature['properties']['iso_a2'], 'Name'] = feature['properties']['name']
 # Get country location
@@ -107,14 +107,14 @@ def template_download_plotly(fig):
              </body>
              </html>
              '''.format(html_body)
-        html_str = "data:text/html;charset=utf-8," + urllib.parse.quote(html_str)
+        html_str = "data:text/html;charset=utf-8," + quote(html_str)
 
         return html_str
 
 
 def template_download_map(map_):
 
-    return "data:text/html;charset=utf-8," + urllib.parse.quote(map_)
+    return "data:text/html;charset=utf-8," + quote(map_)
 
 
 fig_load_year = create_fig_load_year()
@@ -694,8 +694,13 @@ def create_map_load(ch_year):
         else:
             feature['properties']['Load Factor'] = ''
 
+    str_ = europe_geo['features'].to_json()
+    for idx in range(0, len(europe_geo.index)):
+        str_ = str_.replace('"{}":'.format(idx), '')
+    str_ = '{"type":"FeatureCollection","features":[' + str_[1:-1] + ']}'
+
     map_geojson = folium.Choropleth(
-        geo_data=europe_geo,
+        geo_data=str_,
         name='choropleth',
         data=df_map_load,
         columns=[df_map_load.index, 'Load_Factor'],
@@ -713,8 +718,6 @@ def create_map_load(ch_year):
     ).add_to(map_geojson.geojson)
 
     map_geojson.add_to(map_euro_load)
-
-    map_euro_load.save(outfile='Map_LF.html')
 
     return map_euro_load.get_root().render()
 
@@ -1137,8 +1140,13 @@ def create_map_corr(ch_year, ch_country):
             feature['properties']['Load Factor'] = ''
             feature['properties']['Country'] = feature['properties']['name']
 
+    str_ = europe_geo['features'].to_json()
+    for idx in range(0, len(europe_geo.index)):
+        str_ = str_.replace('"{}":'.format(idx), '')
+    str_ = '{"type":"FeatureCollection","features":[' + str_[1:-1] + ']}'
+
     map_geojson = folium.Choropleth(
-        geo_data=europe_geo,
+        geo_data=str_,
         name='choropleth',
         data=df_data_corr,
         columns=[df_data_corr.index, ch_country_code],
