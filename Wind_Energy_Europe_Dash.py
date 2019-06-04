@@ -400,7 +400,7 @@ app.layout = html.Div([
             )
         ],
         style={'width': '30%', 'display': 'inline-block', 'margin-left': '2.5%', 'margin-right': '1.5%',
-               'float': 'left'}
+               'float': 'left', 'margin-top': '40px'}
     ),
     html.Div(
         children=[
@@ -411,7 +411,8 @@ app.layout = html.Div([
                 height='500'
             )
         ],
-        style={'width': '62%', 'display': 'inline-block', 'margin-left': '1.5%', 'margin-right': '2.5%'}
+        style={'width': '62%', 'display': 'inline-block', 'margin-left': '1.5%', 'margin-right': '2.5%',
+               'margin-top': '40px'}
     ),
     html.Div(
         children=[
