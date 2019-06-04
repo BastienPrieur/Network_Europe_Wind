@@ -155,15 +155,13 @@ is given on the top of the map.
 You are also free to download it. It will create a html file on your computer that you can easily open in your web
 browser and share.'''
 
-md_corr = '''
-
-This matrix represents the correlation factor between load factor of every european country.
+md_corr = '''This matrix represents the correlation factor between load factor of every european country.
 
 Correlation factor indicates if both variables (here, load factors) have the same variations. Value goes from
 0 to 1: 1  (red) meaning that both variables are perfectly correlated, 0 (blue) that they are independent.
 
 While clicking on a cell, load factors along the year will be displayed on the right graph. Mean values for
-each month is also provided.
+each month is also provided. The white line represents the equation y=x.
 
 A good correlation does not mean that two countries have the similar load factors but correlated variations. 
 Nevertheless, good correlation factor here show evey time same load factor values. When a country has a low one, it is
