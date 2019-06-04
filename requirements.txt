@@ -7,5 +7,4 @@ pandas
 numpy
 plotly
 datetime
-json
 urllib
