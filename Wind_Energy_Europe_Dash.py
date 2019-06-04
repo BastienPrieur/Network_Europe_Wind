@@ -251,6 +251,10 @@ app.layout = html.Div([
         'Load Factor in Europe',
         className='sub_title',
     ),
+    dcc.Markdown(
+        md_load_30,
+        className='h_comments'
+    ),
     html.Div(
         children=[
             dcc.Graph(
@@ -270,10 +274,6 @@ app.layout = html.Div([
             )
         ],
         style={'margin-left': '87%'}
-    ),
-    dcc.Markdown(
-        md_load_30,
-        className='h_comments'
     ),
     html.Div(
         children=[
