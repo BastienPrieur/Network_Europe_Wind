@@ -22,6 +22,8 @@ from urllib.parse import quote
 css_url = 'https://codepen.io/Poster110/pen/LomzLx.css'
 css_dash = 'https://codepen.io/chriddyp/pen/bWLwgP.css'
 app = dash.Dash(name=__name__)
+server = app.server
+server.secret_key = os.environ.get('secret_key', 'secret')
 app.css.append_css({
     "external_url": [css_dash, css_url],
 })
