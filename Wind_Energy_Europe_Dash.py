@@ -13,7 +13,6 @@ import numpy as np
 import plotly
 import plotly.graph_objs as go
 import datetime
-import urllib3
 from urllib.parse import quote
 import os
 
@@ -29,7 +28,7 @@ app.css.append_css({
     "external_url": [css_dash, css_url],
 })
 layout_ini = go.Layout(paper_bgcolor='#01053c', plot_bgcolor='#01053c', font=dict(color='#ffffff'), height=700)
-map_ini = folium.Map(location=(47, 2), zoom_start=6, tiles='Mapbox Bright')
+map_ini = folium.Map(location=(55, 15), zoom_start=3, tiles='Mapbox Bright')
 
 
 ########################################################################################################################
@@ -178,6 +177,8 @@ The lightest is the green, the less load factors are correlated.
 
 Concerning the circles, blue one represents the selected country. Green ones indicate a higher mean load factor
 during the selected year. And red ones a lower one. Size also indicates the difference.
+
+While selecting a country, the map and all following graphs will be updated.
 '''
 
 md_time_stat = '''
@@ -685,7 +686,7 @@ def year_choice(ch_year):
 
 
 def create_map_load(ch_year):
-    map_euro_load = folium.Map(location=(50, 15), zoom_start=4, tiles='Mapbox Bright')
+    map_euro_load = folium.Map(location=(55, 15), zoom_start=3, tiles='Mapbox Bright')
 
     df_map_load = pd.DataFrame()
     for country in list_country:
@@ -1130,7 +1131,7 @@ def country_choice(ch_country, ch_year):
 def create_map_corr(ch_year, ch_country):
     ch_country_code = df_euro.loc[df_euro['Name'] == ch_country, 'Code'].item()
 
-    map_corr = folium.Map(location=(50, 15), zoom_start=4, tiles='Mapbox Bright')
+    map_corr = folium.Map(location=(55, 15), zoom_start=3, tiles='Mapbox Bright')
     df_data_corr = df_data.loc[df_data['Year'] == ch_year, list_country].corr()
 
     for feature in europe_geo['features']:
