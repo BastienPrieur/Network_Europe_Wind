@@ -1260,7 +1260,7 @@ def create_fig_rep_month(ch_year, ch_country):
         font=dict(color='#ffffff')
     )
 
-    fig_rep_month = go.FigureWidget(data=data, layout=layout)
+    fig_rep_month = go.Figure(data=data, layout=layout)
 
     return fig_rep_month
 
