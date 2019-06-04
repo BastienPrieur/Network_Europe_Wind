@@ -135,15 +135,8 @@ down wind energy. We can only optimize a process after measuring it.
 
 Author: Bastien PRIEUR-GARROUSTE'''
 
-md_map_load = '''This map represents the mean load factor in Europe for the selected year.
-
-On this kind of map, you are able to zoom in and out. On hover, the load factor per country is given. Color scale
-is given on the top of the map.
-
-You are also free to download it. It will create a html file on your computer that you can easily open in your web
-browser and share.'''
-
-md_load_30 = '''This graph represents the mean load factor in every european country for this last 30 years.
+md_load_30 = '''This graph represents the mean load factor in every european country for this last 30 years. The load 
+factor represents the division between the power produced and the local capacity.
 
 On this kind of graph, you are able to zoom in and out while dragging with your mouse. You also can filter each curve
 while clicking on the wanted country in the legend.
@@ -154,6 +147,14 @@ also constant.
 
 On the following slider, you can select the year of study. This will impact every following graph. Year is indicated 
 in the title. You may have to refresh some of them to refresh the selected year.'''
+
+md_map_load = '''This map represents the mean load factor in Europe for the selected year.
+
+On this kind of map, you are able to zoom in and out. On hover, the load factor per country is given. Color scale
+is given on the top of the map.
+
+You are also free to download it. It will create a html file on your computer that you can easily open in your web
+browser and share.'''
 
 md_corr = '''
 
@@ -330,6 +331,10 @@ app.layout = html.Div([
         'Load Factor Correlation',
         className='sub_title',
     ),
+    dcc.Markdown(
+        md_corr,
+        className='h_comments'
+    ),
     html.Div(
         children=[
             html.Div(
@@ -375,10 +380,6 @@ app.layout = html.Div([
             )
         ],
         style={'width': '13%', 'display': 'inline-block', 'margin-left': '37%'}
-    ),
-    dcc.Markdown(
-        md_corr,
-        className='h_comments'
     ),
     html.Div(
         children=[
@@ -428,6 +429,10 @@ app.layout = html.Div([
         'Time Statistics',
         className='sub_title',
     ),
+    dcc.Markdown(
+        md_time_stat,
+        className='h_comments'
+    ),
     html.Div(
         children=[
             dcc.Graph(
@@ -469,10 +474,6 @@ app.layout = html.Div([
             )
         ],
         style={'width': '13%', 'display': 'inline-block', 'margin-left': '37%'}
-    ),
-    dcc.Markdown(
-        md_time_stat,
-        className='h_comments'
     ),
     dcc.Markdown(
         'Load Factor Repartition on a Hourly Basis',
