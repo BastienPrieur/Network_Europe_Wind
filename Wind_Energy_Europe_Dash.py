@@ -39,19 +39,17 @@ df_data = pd.read_csv('Load_Factor_Europe_Wind.csv', low_memory=False)
 list_country = df_data.columns[4:]
 list_country = list_country.sort_values()
 # Capacity Data
-df_cap = pd.read_csv('Capacity_EU_Wind.csv')
+df_cap = pd.read_csv('Capacity_EU_Wind.csv', low_memory=False)
 df_cap.set_index('GEO/TIME', inplace=True)
 df_cap.columns = pd.to_numeric(df_cap.columns)
 # Cleans the load factor file
-for df_gr in df_data.groupby('Year'):
+for year in list(set(df_data['Year'])):
     for country in list_country:
         if country in df_cap.index:
-            year = df_gr[0]
-            if year in df_cap.columns:
-                df_data.loc[df_data['Year'] == year, country] = df_data.loc[df_data['Year'] == year, country] * \
-                                                                df_cap[year][country] / df_cap[year][country]
-            else:
+            if year not in df_cap.columns or np.isnan(df_cap[year][country]):
                 df_data.loc[df_data['Year'] == year, country] = np.nan
+        else:
+            df_data.loc[df_data['Year'] == year, country] = np.nan
 # GeoJson for the map
 europe_geo = pd.read_json(open('Europe_Geojson.txt'))
 # Get properties from the GeoJson
@@ -170,7 +168,8 @@ fig_cap_year = create_fig_cap_year()
 ########################################################################################################################
 # Comments
 ########################################################################################################################
-md_ini = '''Following application has been made using data coming from https://setis.ec.europa.eu/EMHIRES-datasets.
+md_ini = '''Following application has been made using data coming from https://setis.ec.europa.eu/EMHIRES-datasets (for 
+the load factor) and https://ec.europa.eu/eurostat/web/energy/data/database (for the installed capacity).
 Data have then been treated using Python on the Jupyter platform. Data are given on a hourly basis.
 
 This application consists in graph presentation and short analysis. Purpose of this study is not to put
@@ -224,18 +223,15 @@ during the selected year. And red ones a lower one. Size also indicates the diff
 While selecting a country, the map and all following graphs will be updated.
 '''
 
-md_time_stat = '''Concerning the Europe data: the represented load factor does not represent the Europe load factor, 
-but the mean value of every country.
-
-On the left one, it is to notice that a huge difference between summer and winter, and this everywhere in Europe. 
+md_time_stat = '''On the left one, it is to notice that a huge difference between summer and winter, and this everywhere 
+in Europe. 
 This is actually a good point, electrical consumption is higher in winter due for example to house warming. I don't have
 european data, but french ones are available on https://opendata.reseaux-energies.fr/pages/accueil/
 
 On the right one, year time percentage for given load factor range is given. For example, in France 2015, the mean 
 load factor was 28.58% of the time below 10%, and 56.06% of the time below 20%. Reminder: data are provided on a hourly
-basis. For every country, curve are really similar. First bar (below 10%) is important. But in Europe (so, the mean 
-value of all countries), this bar is much smaller. Load factor is more concentrated around a mean value (between 20% 
-and 30%).'''
+basis. For every country, curve are really similar. First bar (below 10%) is important. But in Europe, this bar is a 
+bit smaller. Load factor is more concentrated around a mean value (between 20% and 30%).'''
 
 md_hour_basis = '''The 3 following graphs are linked.
 
@@ -257,19 +253,19 @@ Selected country is compared with all other european countries.
 
 For example, in France, 2015 at 1pm. The 2nd of January, load factor was smaller than the january expected mean load 
 factor (around 19% for a 34.14% expected one). But globally in Europe, at the same time, this load factor was higher 
-than expected (around 41% for a 31.6% expected one). Theoretically then, at this time, France could import electricity 
+than expected (around 48% for a 36.8% expected one). Theoretically then, at this time, France could import electricity 
 from Europe. When both difference have the same sign, however, electricity exchange may not be made.'''
 
 md_hour_scatter_right = '''This graph put aside the time consideration. 
 
-Points in the right top corner represent a positive difference for both selected country and Europe (so, there is  
+Points in the right top corner represent a positive difference for both selected country and Europe (so, there is 
 a green and yellow bar on the left graph for the same day). In this situation, there is too much produced electricity, 
 a solution to store it has to be set. Points in the bottom left represent the times when electricity has to be 
 unloaded.
 
 In the bottom right, the selected country may export electricity while on the top left, it has to import it.
 
-Percentage provide the percentage of points in the given areas.'''
+Annotations provide the percentage of points in the given areas.'''
 
 ########################################################################################################################
 # Layout
