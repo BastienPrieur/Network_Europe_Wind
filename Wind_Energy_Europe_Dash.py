@@ -38,6 +38,20 @@ map_ini = folium.Map(location=(55, 15), zoom_start=3)
 df_data = pd.read_csv('Load_Factor_Europe_Wind.csv', low_memory=False)
 list_country = df_data.columns[4:]
 list_country = list_country.sort_values()
+# Capacity Data
+df_cap = pd.read_excel('Capacity_EU.xlsx')
+df_cap.set_index('GEO/TIME', inplace=True)
+df_cap.columns = pd.to_numeric(df_cap.columns)
+# Cleans the load factor file
+for df_gr in df_data.groupby('Year'):
+    for country in list_country:
+        if country in df_cap.index:
+            year = df_gr[0]
+            if year in df_cap.columns:
+                df_data.loc[df_data['Year'] == year, country] = df_data.loc[df_data['Year'] == year, country] * \
+                                                                df_cap[year][country] / df_cap[year][country]
+            else:
+                df_data.loc[df_data['Year'] == year, country] = np.nan
 # GeoJson for the map
 europe_geo = pd.read_json(open('Europe_Geojson.txt'))
 # Get properties from the GeoJson
@@ -93,6 +107,36 @@ def create_fig_load_year():
     return fig_load_year
 
 
+def create_fig_cap_year():
+    data = []
+    for country in list_country:
+        if country in df_cap.index:
+            if not np.isnan(df_cap.loc[country, :].mean()):
+                trace = go.Scattergl(
+                    x=df_cap.columns,
+                    y=df_cap.loc[country, :],
+                    name=df_euro.loc[df_euro['Code'] == country, 'Name'].item()
+                )
+                data.append(trace)
+
+    layout = go.Layout(
+        title='<b>Installed Wind Capacity per Country for 27 years</b>',
+        xaxis=dict(
+            title='Year'
+        ),
+        yaxis=dict(
+            title='Installed Wind Capactiy [MW]'
+        ),
+        paper_bgcolor='#01053c',
+        plot_bgcolor='#01053c',
+        font=dict(color='#ffffff')
+    )
+
+    fig_cap_year = go.Figure(data=data, layout=layout)
+
+    return fig_cap_year
+
+
 def template_download_plotly(fig):
     if 'data' in fig:
         fig_json = fig.to_plotly_json()
@@ -120,6 +164,7 @@ def template_download_map(map_):
 
 
 fig_load_year = create_fig_load_year()
+fig_cap_year = create_fig_cap_year()
 
 
 ########################################################################################################################
@@ -208,24 +253,23 @@ While clicking on a cell, both following graph will be filled.'''
 
 md_hour_scatter_left = '''This graph represents the difference for each day between the load factor at the selected 
 hour and the monthly mean load factor. This monthly mean value is the same than the one plotted in the precedent graph.
-Selected country is compared with mean Europe values.
+Selected country is compared with all other european countries.
 
 For example, in France, 2015 at 1pm. The 2nd of January, load factor was smaller than the january expected mean load 
 factor (around 19% for a 34.14% expected one). But globally in Europe, at the same time, this load factor was higher 
-than expected (around 40% for a 34.5% expected one). Theoretically then, at this time, France could import electricity 
+than expected (around 41% for a 31.6% expected one). Theoretically then, at this time, France could import electricity 
 from Europe. When both difference have the same sign, however, electricity exchange may not be made.'''
 
 md_hour_scatter_right = '''This graph put aside the time consideration. 
 
-Points in the right top corner represent a positive difference for both selected country and Europe (so, when there is 
-for the same day a green and yellow bar on the left graph). In this situation, there is too much produced electricity, 
+Points in the right top corner represent a positive difference for both selected country and Europe (so, there is  
+a green and yellow bar on the left graph for the same day). In this situation, there is too much produced electricity, 
 a solution to store it has to be set. Points in the bottom left represent the times when electricity has to be 
 unloaded.
 
 In the bottom right, the selected country may export electricity while on the top left, it has to import it.
 
-The red cross indicates the mean value, the ellipsis +/- the standard deviation. Red indicates that a storage solution 
-has to be set and used. Green that exchange are possible between EU and selected country.'''
+Percentage provide the percentage of points in the given areas.'''
 
 ########################################################################################################################
 # Layout
@@ -244,7 +288,7 @@ app.layout = html.Div([
         className='main_comments',
     ),
     dcc.Markdown(
-        'Load Factor in Europe',
+        'Overview',
         className='sub_title',
     ),
     dcc.Markdown(
@@ -266,6 +310,26 @@ app.layout = html.Div([
                 id='dl_fig_load_year',
                 download="Graph_Load_Year.html",
                 href=template_download_plotly(fig_load_year),
+                target="_blank"
+            )
+        ],
+        style={'margin-left': '87%'}
+    ),
+    html.Div(
+        children=[
+            dcc.Graph(
+                id='fig_cap_year',
+                figure=fig_cap_year
+            )
+        ]
+    ),
+    html.Div(
+        children=[
+            html.A(
+                'Download this Graph',
+                id='dl_fig_cap_year',
+                download="Graph_Cap_Year.html",
+                href=template_download_plotly(fig_cap_year),
                 target="_blank"
             )
         ],
@@ -724,7 +788,11 @@ def create_map_load(ch_year):
 
 def create_heatmap(ch_year):
     # Get correlation
-    df_data_corr = df_data.loc[df_data['Year'] == ch_year, list_country].corr()
+    list_country_c = list_country
+    for country in list_country_c:
+        if np.isnan(df_data.loc[df_data['Year'] == ch_year, country].mean()):
+            list_country_c = list_country_c.drop(country)
+    df_data_corr = df_data.loc[df_data['Year'] == ch_year, list_country_c].corr()
 
     z = []
     for col in df_data_corr.columns:
@@ -766,7 +834,8 @@ def create_heatmap_hour(ch_year):
     for df_gr in df_data.loc[df_data['Year'] == ch_year].groupby('Hour'):
         for country in list_country:
             mean_lf = 100 * df_data.loc[df_data['Year'] == ch_year, country].mean()
-            df_data_hour.loc[df_gr[0], country] = 100 * df_gr[1][country].mean() - mean_lf
+            if not np.isnan(mean_lf):
+                df_data_hour.loc[df_gr[0], country] = 100 * df_gr[1][country].mean() - mean_lf
 
     z = []
     for col in df_data_hour.columns:
@@ -916,11 +985,21 @@ def fill_graph_hour(sel_pt, ch_year):
         for df_gr in df_data.loc[df_data['Year'] == ch_year, df_data.columns].groupby('Month'):
             month = df_gr[0]
             df_scatter.loc[df_scatter['Month'] == month, 'Mean'] = 100 * df_gr[1][country_code].mean()
-            df_scatter.loc[df_scatter['Month'] == month, 'Mean_EU'] = 100 * df_gr[1][list_country].mean(axis=1).mean()
+            av_eu = 0
+            for country in list_country:
+                if country in df_cap.index:
+                    if not np.isnan(df_cap[ch_year][country]):
+                        av_eu += 100 * df_gr[1][country].mean() * df_cap[ch_year][country] / df_cap[ch_year].sum()
+            df_scatter.loc[df_scatter['Month'] == month, 'Mean_EU'] = av_eu
 
         # 'Diff' represents the difference between the load factor at selected hour and the monthly mean value
         df_scatter['Diff'] = 100 * df_scatter[country_code] - df_scatter['Mean']
-        df_scatter['Diff_EU'] = 100 * df_scatter.loc[:, list_country].mean(axis=1) - df_scatter['Mean_EU']
+        av_eu = 0
+        for country in list_country.drop(country_code):
+            if country in df_cap.index:
+                if not np.isnan(df_cap[ch_year][country]):
+                    av_eu += df_scatter[country] * df_cap[ch_year][country] / df_cap[ch_year].sum()
+        df_scatter['Diff_EU'] = 100 * av_eu - df_scatter['Mean_EU']
         df_scatter['Color'] = np.where(df_scatter['Diff'] > 0, 'green', 'red')
         df_scatter['Color_EU'] = np.where(df_scatter['Diff_EU'] > 0, 'yellow', 'magenta')
 
@@ -1042,28 +1121,8 @@ def fill_bar_hour(ch_year, country_name, sel_hour, df_scatter):
 
 
 def fill_scatter_versus(ch_year, country_name, sel_hour, df_scatter):
-    sh_c = [df_scatter['Diff'].mean(), df_scatter['Diff_EU'].mean()]
-    sh_std = [df_scatter['Diff'].std(), df_scatter['Diff_EU'].std()]
-    if sh_c[0] * sh_c[1] > 0:
-        sh_color = 'red'
-    else:
-        sh_color = 'green'
 
-    data = [
-        go.Scatter(
-            x=[sh_c[0]],
-            y=[sh_c[1]],
-            name='Mean',
-            mode='markers',
-            marker=dict(
-                symbol='cross',
-                color=sh_color,
-                size=12
-            ),
-            showlegend=False
-        )
-    ]
-
+    data = []
     for df_gr in df_scatter.groupby('Month'):
         trace = go.Scattergl(
             x=df_gr[1]['Diff'],
@@ -1088,10 +1147,42 @@ def fill_scatter_versus(ch_year, country_name, sel_hour, df_scatter):
         hovermode='closest',
         paper_bgcolor='#01053c',
         plot_bgcolor='#01053c',
-        font=dict(color='#ffffff'),
-        shapes=[dict(type='circle', xref='x', yref='y', x0=sh_c[0] - sh_std[0], x1=sh_c[0] + sh_std[0],
-                    y0=sh_c[1] - sh_std[1], y1=sh_c[1] + sh_std[1], fillcolor=sh_color, opacity=0.3)]
+        font=dict(color='#ffffff')
     )
+
+    per_tr = 100 * len(df_scatter.loc[(df_scatter['Diff'] > 0) & (df_scatter['Diff_EU'] > 0)]) / len(df_scatter)
+    per_br = 100 * len(df_scatter.loc[(df_scatter['Diff'] > 0) & (df_scatter['Diff_EU'] < 0)]) / len(df_scatter)
+    per_cr = 100 * len(df_scatter.loc[df_scatter['Diff'] > 0]) / len(df_scatter)
+    per_bl = 100 * len(df_scatter.loc[(df_scatter['Diff'] < 0) & (df_scatter['Diff_EU'] < 0)]) / len(df_scatter)
+    per_bc = 100 * len(df_scatter.loc[df_scatter['Diff_EU'] < 0]) / len(df_scatter)
+    per_tl = 100 * len(df_scatter.loc[(df_scatter['Diff'] < 0) & (df_scatter['Diff_EU'] > 0)]) / len(df_scatter)
+    per_cl = 100 * len(df_scatter.loc[df_scatter['Diff'] < 0]) / len(df_scatter)
+    per_tc = 100 * len(df_scatter.loc[df_scatter['Diff_EU'] > 0]) / len(df_scatter)
+    ann_tr = dict(xref='paper', yref='paper', showarrow=False, x=1, y=1, text=str(round(per_tr, 2)) + '%',
+                  align='center', font=dict(color='#ffffff'), bordercolor='#c7c7c7', borderwidth=2, borderpad=4,
+                  bgcolor='#000000', opacity=0.8)
+    ann_br = dict(xref='paper', yref='paper', showarrow=False, x=1, y=0, text=str(round(per_br, 2)) + '%',
+                  align='center', font=dict(color='#ffffff'), bordercolor='#c7c7c7', borderwidth=2, borderpad=4,
+                  bgcolor='#000000', opacity=0.8)
+    ann_bl = dict(xref='paper', yref='paper', showarrow=False, x=0, y=0, text=str(round(per_bl, 2)) + '%',
+                  align='center', font=dict(color='#ffffff'), bordercolor='#c7c7c7', borderwidth=2, borderpad=4,
+                  bgcolor='#000000', opacity=0.8)
+    ann_tl = dict(xref='paper', yref='paper', showarrow=False, x=0, y=1, text=str(round(per_tl, 2)) + '%',
+                  align='center', font=dict(color='#ffffff'), bordercolor='#c7c7c7', borderwidth=2, borderpad=4,
+                  bgcolor='#000000', opacity=0.8)
+    ann_cr = dict(xref='paper', yref='y', showarrow=False, x=1, y=0, text=str(round(per_cr, 2)) + '%',
+                  align='center', font=dict(color='#ffffff'), bordercolor='#c7c7c7', borderwidth=2, borderpad=4,
+                  bgcolor='#000000', opacity=0.8)
+    ann_bc = dict(xref='x', yref='paper', showarrow=False, x=0, y=0, text=str(round(per_bc, 2)) + '%',
+                  align='center', font=dict(color='#ffffff'), bordercolor='#c7c7c7', borderwidth=2, borderpad=4,
+                  bgcolor='#000000', opacity=0.8)
+    ann_cl = dict(xref='paper', yref='y', showarrow=False, x=0, y=0, text=str(round(per_cl, 2)) + '%',
+                  align='center', font=dict(color='#ffffff'), bordercolor='#c7c7c7', borderwidth=2, borderpad=4,
+                  bgcolor='#000000', opacity=0.8)
+    ann_tc = dict(xref='x', yref='paper', showarrow=False, x=0, y=1, text=str(round(per_tc, 2)) + '%',
+                  align='center', font=dict(color='#ffffff'), bordercolor='#c7c7c7', borderwidth=2, borderpad=4,
+                  bgcolor='#000000', opacity=0.8)
+    layout.annotations = [ann_tr, ann_br, ann_bl, ann_tl, ann_bc, ann_cl, ann_cr, ann_tc]
 
     fig_scatter_versus = go.Figure(data=data, layout=layout)
 
@@ -1178,18 +1269,19 @@ def create_map_corr(ch_year, ch_country):
     for country in list_country:
         if country != ch_country_code:
             lf_country = 100 * df_data.loc[df_data['Year'] == ch_year, country].mean()
-            if lf_country < lf_ch_country:
-                c_color = 'red'
-            else:
-                c_color = 'green'
-            folium.CircleMarker(
-                location=[df_euro.loc[df_euro['Code'] == country, 'Lat'].item(),
-                          df_euro.loc[df_euro['Code'] == country, 'Lon'].item()],
-                radius=max(1, 10 + lf_country - lf_ch_country),
-                color=c_color,
-                fill=True,
-                fill_color=c_color
-            ).add_to(map_corr)
+            if not np.isnan(lf_country):
+                if lf_country < lf_ch_country:
+                    c_color = 'red'
+                else:
+                    c_color = 'green'
+                folium.CircleMarker(
+                    location=[df_euro.loc[df_euro['Code'] == country, 'Lat'].item(),
+                              df_euro.loc[df_euro['Code'] == country, 'Lon'].item()],
+                    radius=max(1, 10 + lf_country - lf_ch_country),
+                    color=c_color,
+                    fill=True,
+                    fill_color=c_color
+                ).add_to(map_corr)
 
     return map_corr.get_root().render()
 
@@ -1201,7 +1293,12 @@ def create_fig_rep_month(ch_year, ch_country):
     for df_gr in df_data.loc[df_data['Year'] == ch_year].groupby('Month'):
         month = datetime.date(1900, df_gr[0], 1).strftime('%B')
         df_temp = df_gr[1][list_country]
-        df_load_month.loc[month, 'LF_EU'] = 100 * df_temp.mean(axis=1).mean()
+        av_eu = 0
+        for country in list_country:
+            if country in df_cap.index:
+                if not np.isnan(df_cap[ch_year][country]):
+                    av_eu += 100 * df_temp[country].mean() * df_cap[ch_year][country] / df_cap[ch_year].sum()
+        df_load_month.loc[month, 'LF_EU'] = av_eu
         df_load_month.loc[month, 'LF_Country'] = 100 * df_gr[1][ch_country_code].mean()
 
     data = [
@@ -1267,7 +1364,11 @@ def create_fig_rep_per(ch_year, ch_country):
 
     list_per = np.linspace(10, 100, num=10)
     df_data_rep = df_data.loc[df_data['Year'] == ch_year, list_country]
-    df_data_rep['Mean'] = df_data_rep.mean(axis=1)
+    df_data_rep['Mean'] = 0
+    for country in df_data_rep.columns:
+        if country in df_cap.index:
+            if not np.isnan(df_cap[ch_year][country]):
+                df_data_rep['Mean'] += df_data_rep[country] * df_cap[ch_year][country] / df_cap[ch_year].sum()
 
     df_rep = pd.DataFrame()
     for per in list_per:
