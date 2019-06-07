@@ -39,7 +39,7 @@ df_data = pd.read_csv('Load_Factor_Europe_Wind.csv', low_memory=False)
 list_country = df_data.columns[4:]
 list_country = list_country.sort_values()
 # Capacity Data
-df_cap = pd.read_excel('Capacity_EU.xlsx')
+df_cap = pd.read_csv('Capacity_EU_Wind.csv')
 df_cap.set_index('GEO/TIME', inplace=True)
 df_cap.columns = pd.to_numeric(df_cap.columns)
 # Cleans the load factor file
